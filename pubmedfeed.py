@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 
-DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1510822077173862570/LwepZXHkvgHN5KjovuoRyquZkpUMVmLhTUC4DTLTFPMYf0kCl0mcQ834Mw24LTDih-U_")
+DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/1510773471695863811/-oVyk2Ho8PEMOz_2UM13Yt88bd6gzu4dHOr-8UdkeXKUzlDayFxizAna6wRoeEHzuBrC")
 PUBMED_API_KEY = os.environ.get("PUBMED_API_KEY", "")
 
 CONDITIONS = [
