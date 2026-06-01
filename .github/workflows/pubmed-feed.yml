@@ -1,0 +1,28 @@
+name: PubMed Discord Feed
+
+on:
+  schedule:
+    - cron: '0 10 * * *'  # Daily at 10am UTC
+  workflow_dispatch:
+
+jobs:
+  post-papers:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install requests
+      - name: Cache seen papers
+        uses: actions/cache@v4
+        with:
+          path: seen_pubmed.json
+          key: seen-pubmed-${{ github.run_id }}
+          restore-keys: seen-pubmed-
+      - name: Run feed
+        run: python pubmed_feed.py
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PUBMED_API_KEY: ${{ secrets.PUBMED_API_KEY }}
