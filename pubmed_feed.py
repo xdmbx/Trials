@@ -333,7 +333,7 @@ def post_to_discord(pmid, paper, condition):
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
     payload = {
-    "username": "ClinicalTrials Bot",
+    "username": "PubMed Bot",
     "avatar_url": "https://i.postimg.cc/KvSz3kyB/IMG-0073.png",
     "embeds": [embed]
 }
