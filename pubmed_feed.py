@@ -334,7 +334,7 @@ def post_to_discord(pmid, paper, condition):
     }
     payload = {
     "username": "PubMed Bot",
-    "avatar_url": "https://cdn.discordapp.com/attachments/1511181435522908260/1511181800813101086/IMG_0073.png?ex=6a1f8539&is=6a1e33b9&hm=47d8a84fde6e987489adbeb311fd00ec8656ec1523e531a8dd0a3ce185d46b5f&",
+    "avatar_url": "https://i.ibb.co/L4xxqgn/IMG-0073.png",
     "embeds": [embed]
 }
     try:
