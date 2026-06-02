@@ -292,7 +292,7 @@ def post_to_discord(trial, matched_condition):
 
     payload = {
         "username": "ClinicalTrials Bot",
-        "avatar_url": "https://clinicaltrials.gov/favicon.ico",
+        "avatar_url": "https://i.postimg.cc/gkTgKWgp/IMG-0076.png",
         "embeds": [embed]
     }
 
