@@ -292,7 +292,7 @@ def post_to_discord(trial, matched_condition):
 
     payload = {
         "username": "ClinicalTrials Bot",
-        "avatar_url": "https://cdn.discordapp.com/attachments/1511181435522908260/1511181812578128083/IMG_0076.png?ex=6a1f853c&is=6a1e33bc&hm=49e9e38c8f78682dd0e5118f7c4b013bb272f3aa6a5463f2ba2cb07929eb6484&",
+        "avatar_url": "https://i.ibb.co/GQqG2XVW/IMG-0076.png",
         "embeds": [embed]
     }
 
