@@ -334,7 +334,7 @@ def post_to_discord(pmid, paper, condition):
     }
     payload = {
     "username": "ClinicalTrials Bot",
-    "avatar_url": "https://clinicaltrials.gov/favicon.ico",
+    "avatar_url": "https://i.postimg.cc/KvSz3kyB/IMG-0073.png",
     "embeds": [embed]
 }
     try:
