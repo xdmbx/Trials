@@ -3,7 +3,7 @@ name: Clinical Trials Discord Feed
 
 on:
   schedule:
-    - cron: '0 9 * * *'   # Daily at 9am UTC
+   - cron: '0 * * * *'
   workflow_dispatch:        # Also allows manual trigger from GitHub UI
 
 jobs:
