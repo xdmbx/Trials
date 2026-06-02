@@ -333,9 +333,10 @@ def post_to_discord(pmid, paper, condition):
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
     payload = {
-        "username": "PubMed Bot",
-        "embeds": [embed]
-    }
+    "username": "ClinicalTrials Bot",
+    "avatar_url": "https://clinicaltrials.gov/favicon.ico",
+    "embeds": [embed]
+}
     try:
         r = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
         r.raise_for_status()
