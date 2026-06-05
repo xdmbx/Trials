@@ -657,10 +657,6 @@ CONDITIONS = [
 
 SEEN_FILE = "seen_pubmed.json"
 
-def fetch_pubmed_ids(condition):
-    time.sleep(1.0)  # Add this line at the start
-    today = datetime.now().strftime("%Y/%m/%d")
-    ...
     
 def load_seen():
     if os.path.exists(SEEN_FILE):
@@ -673,18 +669,27 @@ def save_seen(seen):
         json.dump(list(seen), f)
 
 def fetch_pubmed_ids(condition):
+    time.sleep(1.0)
     today = datetime.now().strftime("%Y/%m/%d")
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     params = {
         "db": "pubmed",
         "term": f"{condition}[Title/Abstract]",
-        "datetype": "pdat",
-        "mindate": "today",
-        "maxdate": "today",
+        "datetype": "edat",
+        "mindate": today,
+        "maxdate": today,
         "retmax": 10,
         "retmode": "json",
         "sort": "pub+date",
+        "api_key": os.environ.get("PUBMED_API_KEY", ""),
     }
+    try:
+        r = requests.get(url, params=params, timeout=15)
+        r.raise_for_status()
+        return r.json().get("esearchresult", {}).get("idlist", [])
+    except Exception as e:
+        print(f"Error searching '{condition}': {e}")
+        return []
     try:
         r = requests.get(url, params=params, timeout=15)
         r.raise_for_status()
