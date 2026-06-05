@@ -3,7 +3,8 @@ import json
 import os
 from datetime import datetime, timedelta
 
-DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "YOUR_WEBHOOK_URL_HERE")
+BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
+CHANNEL_ID = "1510647038977773640"
 
 CONDITIONS = [
 "anhedonia",
@@ -718,17 +719,14 @@ def post_to_discord(trial, matched_condition):
     if len(summary) > 350:
         summary = summary[:350].rsplit(" ", 1)[0] + "…"
 
-    # Countries
     locations = contacts_mod.get("locations", [])
     countries = list(set(loc.get("country", "") for loc in locations if loc.get("country")))
     country_str = ", ".join(countries[:5]) if countries else "Not specified"
 
-    color = CONDITION_COLORS.get(matched_condition, 0x4A90D9)
-
     embed = {
         "title": f"🔬 {title}",
         "url": f"https://clinicaltrials.gov/study/{nct_id}",
-        "color": color,
+        "color": 0x0057b7,
         "description": summary,
         "fields": [
             {"name": "🏷️ Matched Condition", "value": matched_condition.title(), "inline": True},
@@ -743,14 +741,18 @@ def post_to_discord(trial, matched_condition):
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
 
-    payload = {
-        "username": "ClinicalTrials Bot",
-        "avatar_url": "https://i.ibb.co/GQqG2XVW/IMG-0076.png",
-        "embeds": [embed]
+    headers = {
+        "Authorization": f"Bot {BOT_TOKEN}",
+        "Content-Type": "application/json"
     }
-
+    payload = {"embeds": [embed]}
     try:
-        r = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
+        r = requests.post(
+            f"https://discord.com/api/v10/channels/{CHANNEL_ID}/messages",
+            headers=headers,
+            json=payload,
+            timeout=10
+        )
         r.raise_for_status()
     except Exception as e:
         print(f"Discord post failed for {nct_id}: {e}")
