@@ -1,15 +1,14 @@
 import requests
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 import xml.etree.ElementTree as ET
 
-DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_WEBHOOK_URL", "")
-PUBMED_API_KEY = os.environ.get("PUBMED_API_KEY", "")
+BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
+CHANNEL_ID = "1510647038977773640"
 
 CONDITIONS = [
-    # Core Symptoms
-"anhedonia",
+    "anhedonia",
 "consummatory anhedonia",
 "anticipatory anhedonia",
 "motivational anhedonia",
@@ -653,25 +652,9 @@ CONDITIONS = [
 "calcium signaling neurons",
 "drug nonresponse",
 "loss of drug effects",
-
 ]
 
 SEEN_FILE = "seen_pubmed.json"
-
-CONDITION_COLORS = {
-    "anhedonia": 0x4A90D9,
-    "major depression": 0x5B6EF5,
-    "treatment resistant depression": 0x7B5EA7,
-    "treatment resistant anhedonia": 0x9B59B6,
-    "emotional blunting": 0x3498DB,
-    "reward processing": 0x1ABC9C,
-    "apathy": 0x95A5A6,
-    "depersonalization": 0xE67E22,
-    "derealization": 0xE74C3C,
-    "cognitive dysfunction": 0x2ECC71,
-    "executive dysfunction": 0x27AE60,
-    "purinergic": 0xF39C12,
-}
 
 def load_seen():
     if os.path.exists(SEEN_FILE):
@@ -696,8 +679,6 @@ def fetch_pubmed_ids(condition):
         "retmode": "json",
         "sort": "pub+date",
     }
-    if PUBMED_API_KEY:
-        params["api_key"] = PUBMED_API_KEY
     try:
         r = requests.get(url, params=params, timeout=15)
         r.raise_for_status()
@@ -713,8 +694,6 @@ def fetch_paper_details(pmid):
         "id": pmid,
         "retmode": "xml",
     }
-    if PUBMED_API_KEY:
-        params["api_key"] = PUBMED_API_KEY
     try:
         r = requests.get(url, params=params, timeout=15)
         r.raise_for_status()
@@ -732,7 +711,6 @@ def parse_paper(xml_text):
 
         title = article.findtext(".//ArticleTitle", "No title").strip()
 
-        # Authors
         authors = []
         for author in article.findall(".//Author")[:3]:
             last = author.findtext("LastName", "")
@@ -743,20 +721,15 @@ def parse_paper(xml_text):
         if len(article.findall(".//Author")) > 3:
             author_str += " et al."
 
-        # Journal
         journal = article.findtext(".//Journal/Title", "Unknown Journal")
 
-        # Abstract
         abstract_parts = article.findall(".//AbstractText")
-        abstract = " ".join(
-            (p.text or "") for p in abstract_parts if p.text
-        )
+        abstract = " ".join((p.text or "") for p in abstract_parts if p.text)
         if len(abstract) > 350:
             abstract = abstract[:350].rsplit(" ", 1)[0] + "…"
         if not abstract:
             abstract = "No abstract available."
 
-        # Pub date
         pub_date = article.findtext(".//PubDate/Year", "")
 
         return {
@@ -771,11 +744,10 @@ def parse_paper(xml_text):
         return None
 
 def post_to_discord(pmid, paper, condition):
-    color = CONDITION_COLORS.get(condition, 0x4A90D9)
     embed = {
         "title": f"📄 {paper['title']}",
         "url": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
-        "color": color,
+        "color": 0x4A90D9,
         "description": paper["abstract"],
         "fields": [
             {"name": "🏷️ Matched Condition", "value": condition.title(), "inline": True},
@@ -786,13 +758,18 @@ def post_to_discord(pmid, paper, condition):
         "footer": {"text": "PubMed • New Paper Alert"},
         "timestamp": datetime.utcnow().isoformat() + "Z"
     }
-    payload = {
-    "username": "PubMed Bot",
-    "avatar_url": "https://i.ibb.co/L4xxqgn/IMG-0073.png",
-    "embeds": [embed]
-}
+    headers = {
+        "Authorization": f"Bot {BOT_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    payload = {"embeds": [embed]}
     try:
-        r = requests.post(DISCORD_WEBHOOK_URL, json=payload, timeout=10)
+        r = requests.post(
+            f"https://discord.com/api/v10/channels/{CHANNEL_ID}/messages",
+            headers=headers,
+            json=payload,
+            timeout=10
+        )
         r.raise_for_status()
     except Exception as e:
         print(f"Discord post failed for PMID {pmid}: {e}")
