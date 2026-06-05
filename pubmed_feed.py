@@ -699,6 +699,7 @@ def fetch_paper_details(pmid):
     }
     try:
         r = requests.get(url, params=params, timeout=15)
+     print(f"{condition}: status={r.status_code}, count={r.json().get('esearchresult', {}).get('count', 'error')}")
         r.raise_for_status()
         return r.text
     except Exception as e:
