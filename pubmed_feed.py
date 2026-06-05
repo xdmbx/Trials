@@ -656,8 +656,7 @@ CONDITIONS = [
 ]
 
 SEEN_FILE = "seen_pubmed.json"
-
-    
+ 
 def load_seen():
     if os.path.exists(SEEN_FILE):
         with open(SEEN_FILE) as f:
@@ -683,13 +682,6 @@ def fetch_pubmed_ids(condition):
         "sort": "pub+date",
         "api_key": os.environ.get("PUBMED_API_KEY", ""),
     }
-    try:
-        r = requests.get(url, params=params, timeout=15)
-        r.raise_for_status()
-        return r.json().get("esearchresult", {}).get("idlist", [])
-    except Exception as e:
-        print(f"Error searching '{condition}': {e}")
-        return []
     try:
         r = requests.get(url, params=params, timeout=15)
         r.raise_for_status()
