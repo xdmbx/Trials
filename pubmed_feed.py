@@ -3,6 +3,12 @@ import json
 import os
 from datetime import datetime
 import xml.etree.ElementTree as ET
+import time
+
+def fetch_pubmed_ids(condition):
+    time.sleep(0.4)  # Add this line at the start
+    today = datetime.now().strftime("%Y/%m/%d")
+    ...
 
 BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 CHANNEL_ID = "1510647038977773640"
@@ -673,8 +679,8 @@ def fetch_pubmed_ids(condition):
         "db": "pubmed",
         "term": f"{condition}[Title/Abstract]",
         "datetype": "pdat",
-        "mindate": "2026/06/04",
-        "maxdate": "2026/06/05",
+        "mindate": "today",
+        "maxdate": "today",
         "retmax": 10,
         "retmode": "json",
         "sort": "pub+date",
