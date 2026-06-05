@@ -658,7 +658,7 @@ CONDITIONS = [
 SEEN_FILE = "seen_pubmed.json"
 
 def fetch_pubmed_ids(condition):
-    time.sleep(.4)  # Add this line at the start
+    time.sleep(1.0)  # Add this line at the start
     today = datetime.now().strftime("%Y/%m/%d")
     ...
     
