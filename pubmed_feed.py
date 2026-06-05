@@ -5,16 +5,11 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 import time
 
-def fetch_pubmed_ids(condition):
-    time.sleep(0.4)  # Add this line at the start
-    today = datetime.now().strftime("%Y/%m/%d")
-    ...
-
 BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 CHANNEL_ID = "1510647038977773640"
 
 CONDITIONS = [
-    "anhedonia",
+ "anhedonia",
 "consummatory anhedonia",
 "anticipatory anhedonia",
 "motivational anhedonia",
@@ -662,6 +657,11 @@ CONDITIONS = [
 
 SEEN_FILE = "seen_pubmed.json"
 
+def fetch_pubmed_ids(condition):
+    time.sleep(.4)  # Add this line at the start
+    today = datetime.now().strftime("%Y/%m/%d")
+    ...
+    
 def load_seen():
     if os.path.exists(SEEN_FILE):
         with open(SEEN_FILE) as f:
