@@ -1,5 +1,4 @@
 import requests
-import time
 import json
 import os
 from datetime import datetime, timedelta
@@ -771,7 +770,6 @@ def run():
             if not nct_id or nct_id in seen or nct_id in new_seen:
                 continue  # Skip duplicates across conditions
             post_to_discord(trial, condition)
-            time.sleep(2)
             new_seen.add(nct_id)
             posted += 1
 
