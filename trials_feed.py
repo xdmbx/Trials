@@ -687,8 +687,8 @@ def fetch_trials(condition):
     min_date = (datetime.now() - timedelta(days=DAYS_BACK)).strftime("%Y-%m-%d")
     url = "https://clinicaltrials.gov/api/v2/studies"
     params = {
-    "query.cond": condition,
-    "filter.advanced": f"AREA[StudyFirstPostDate]RANGE[{min_date}, MAX] AND AREA[LocationCountry](United States OR United Kingdom OR Germany OR France OR Italy OR Spain OR Netherlands OR Belgium OR Sweden OR Denmark OR Norway OR Finland OR Switzerland OR Austria OR Poland)",
+    "query.term": condition,
+    "filter.advanced": f"AREA[LocationCountry](United States OR United Kingdom OR Germany OR France OR Italy OR Spain OR Netherlands OR Belgium OR Sweden OR Denmark OR Norway OR Finland OR Switzerland OR Austria OR Poland)",
     "fields": "NCTId,BriefTitle,Condition,Phase,StudyType,OverallStatus,StartDate,BriefSummary,LeadSponsorName,LocationCountry",
     "pageSize": 20,
     "sort": "StudyFirstPostDate:desc"
