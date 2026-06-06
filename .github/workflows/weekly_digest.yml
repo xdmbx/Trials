@@ -2,7 +2,7 @@ name: weekly-digest
 
 on:
   schedule:
-    - cron: '0 18 * * 0'  # Every Sunday at 6pm UTC
+    - cron: '0 1 * * 6'  # Every Sunday at 6pm UTC
   workflow_dispatch:
 
 jobs:
