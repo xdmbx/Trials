@@ -30,19 +30,67 @@ def save_starred(starred):
     with open(SEEN_FILE, "w") as f:
         json.dump(list(starred), f)
 
-def summarize(url, context_text):
+def get_pubmed_abstract(pmid):
+    try:
+        url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+        params = {"db": "pubmed", "id": pmid, "retmode": "xml"}
+        r = requests.get(url, params=params, timeout=15)
+        r.raise_for_status()
+        import xml.etree.ElementTree as ET
+        root = ET.fromstring(r.text)
+        title = root.findtext(".//ArticleTitle", "")
+        parts = root.findall(".//AbstractText")
+        abstract = " ".join((p.text or "") for p in parts if p.text)
+        return f"Title: {title}\nAbstract: {abstract}".strip()
+    except Exception:
+        return ""
+
+def get_crossref_by_doi(doi):
+    try:
+        r = requests.get(f"https://api.crossref.org/works/{doi}", timeout=15,
+                         headers={"User-Agent": "ResearchBot/1.0"})
+        r.raise_for_status()
+        msg = r.json().get("message", {})
+        title = (msg.get("title") or [""])[0]
+        abstract = msg.get("abstract", "")
+        abstract = re.sub(r"<[^>]+>", "", abstract)  # strip XML tags
+        return f"Title: {title}\nAbstract: {abstract}".strip()
+    except Exception:
+        return ""
+
+def extract_source_text(url):
+    # PubMed link?
+    m = re.search(r'pubmed\.ncbi\.nlm\.nih\.gov/(\d+)', url)
+    if m:
+        text = get_pubmed_abstract(m.group(1))
+        if text:
+            return text, "pubmed"
+    # DOI link?
+    m = re.search(r'(10\.\d{4,9}/[-._;()/:A-Z0-9]+)', url, re.I)
+    if m:
+        text = get_crossref_by_doi(m.group(1))
+        if text:
+            return text, "crossref"
+    # Fallback: try fetching the page
     try:
         page = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
-        content = page.text[:8000]
+        if page.status_code == 200 and len(page.text) > 500:
+            return page.text[:8000], "page"
     except Exception:
-        content = ""
+        pass
+    return "", "none"
+
+def summarize(url, context_text):
+    source_text, method = extract_source_text(url)
+    if not source_text:
+        return None  # Couldn't get content — signal to skip
     prompt = f"""A member of a research community focused on severe anhedonia and reward dysfunction shared this link.
 
 Posted text: {context_text}
 URL: {url}
-Page content (may be truncated or empty): {content}
+Source content: {source_text}
 
-Write a 2-4 sentence plain-language summary of what this source says. Describe the findings or content factually. Do NOT give medical advice, dosing, or tell anyone what to try — just explain what the source reports. If the page content is empty, summarize based on the URL and posted text as best you can, and note it's based on limited info."""
+Write a 2-4 sentence plain-language summary of what this source says. Describe the findings factually. Do NOT give medical advice, dosing, or tell anyone what to try — just explain what the source reports."""
     msg = ai.messages.create(
         model="claude-opus-4-5",
         max_tokens=400,
@@ -72,11 +120,10 @@ async def on_thread_create(thread):
     if not urls:
         return
     summary = summarize(urls[0], text)
-    embed = discord.Embed(
-        title="📝 Plain-Language Summary",
-        description=summary,
-        color=0x1ABC9C
-    )
+    if summary is None:
+        print(f"Skipped (no accessible content): {thread.name}")
+        return
+    embed = discord.Embed(title="📝 Plain-Language Summary", description=summary, color=0x1ABC9C)
     embed.set_footer(text="AI summary • factual only, not medical advice")
     await thread.send(embed=embed)
 
