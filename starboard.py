@@ -36,7 +36,6 @@ def summarize(url, context_text):
         content = page.text[:8000]
     except Exception:
         content = ""
-
     prompt = f"""A member of a research community focused on severe anhedonia and reward dysfunction shared this link.
 
 Posted text: {context_text}
@@ -44,7 +43,6 @@ URL: {url}
 Page content (may be truncated or empty): {content}
 
 Write a 2-4 sentence plain-language summary of what this source says. Describe the findings or content factually. Do NOT give medical advice, dosing, or tell anyone what to try — just explain what the source reports. If the page content is empty, summarize based on the URL and posted text as best you can, and note it's based on limited info."""
-
     msg = ai.messages.create(
         model="claude-opus-4-5",
         max_tokens=400,
@@ -63,17 +61,16 @@ async def on_thread_create(thread):
     try:
         starter = await thread.fetch_message(thread.id)
     except Exception:
+        starter = None
         async for m in thread.history(limit=1, oldest_first=True):
             starter = m
             break
-        else:
+        if starter is None:
             return
-
     text = starter.content or ""
     urls = re.findall(r'https?://\S+', text)
     if not urls:
         return
-
     summary = summarize(urls[0], text)
     embed = discord.Embed(
         title="📝 Plain-Language Summary",
@@ -89,14 +86,11 @@ async def on_raw_reaction_add(payload):
         return
     if payload.channel_id == STARBOARD_CHANNEL_ID:
         return
-
     starred = load_starred()
     if payload.message_id in starred:
         return
-
     channel = client.get_channel(payload.channel_id) or await client.fetch_channel(payload.channel_id)
     message = await channel.fetch_message(payload.message_id)
-
     for reaction in message.reactions:
         if str(reaction.emoji) == STAR_EMOJI and reaction.count >= 1:
             starboard = client.get_channel(STARBOARD_CHANNEL_ID) or await client.fetch_channel(STARBOARD_CHANNEL_ID)
