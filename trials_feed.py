@@ -9,7 +9,6 @@ BOT_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 CHANNEL_ID = "1510647038977773640"
 
-# --- paste your full CONDITIONS list here, unchanged ---
 from conditions_list import CONDITIONS
 
 DAYS_BACK = 1
@@ -24,19 +23,21 @@ ALLOWED_COUNTRIES = {
 
 _ai = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-COMMUNITY_PROFILE = """A research community focused on severe, treatment-resistant anhedonia, reward dysfunction, emotional blunting, 'blank mind', and global non-response to psychoactive substances. Also relevant: dopamine/glutamate/opioid systems, neuroinflammation, neuroplasticity, depression mechanisms, novel antidepressants, neuromodulation, and adjacent neuroscience/pharmacology."""
+COMMUNITY_PROFILE = """A research community for people with severe, often treatment-resistant anhedonia and related states: 'blank mind' (loss of inner speech/imagery/spontaneous thought), profound emotional blunting, loss of motivation/drive, and 'substance blockage' (psychoactive drugs producing little or no effect). Onset is often linked to a discrete trigger — antipsychotics, SSRIs/SNRIs, finasteride (PFS), bupropion, benzodiazepine withdrawal/kindling, MDMA/psychedelics, long COVID/post-viral states, chronic stress, or metabolic/autoimmune causes — though some cases are gradual or lifelong. Members closely track mechanisms (dopaminergic, glutamatergic AMPA/NMDA, opioid, GABAergic/neurosteroid, neuroinflammatory, neuroplasticity, mitochondrial/metabolic, gut-brain, HPA/autonomic) and experimental interventions (MAOIs, dopamine agonists, ketamine, novel/rapid antidepressants, neuromodulation, neurotrophic peptides, immunomodulation, and research-chemical approaches)."""
 
 def is_relevant(title, summary, condition):
     prompt = f"""{COMMUNITY_PROFILE}
 
-A clinical trial matched the keyword "{condition}". Decide if it's relevant enough to post.
+A paper/trial matched the keyword "{condition}". Decide whether to post it.
 
 Title: {title}
 Summary: {summary}
 
-Be LOOSE — anything about the brain, mental health, neuroscience, pharmacology, or adjacent mechanisms should pass. It does NOT have to be specifically about anhedonia; adjacent is fine. Only reject things CLEARLY unrelated (e.g. a cancer chemo trial, a dentistry study, an orthopedic device) that matched a keyword incidentally.
+INCLUDE if it has any plausible connection to anhedonia, reward/motivation/pleasure processing, emotion regulation, depression (especially treatment-resistant), drug-induced or persistent neuropsychiatric states, or any brain mechanism or intervention this community studies — even loosely or preclinically. Animal models, mechanism papers, novel compounds, and research chemicals all count.
 
-Reply with ONLY one word: RELEVANT or IRRELEVANT."""
+REJECT only if the keyword appears incidentally with no brain/mind/mood/reward angle — e.g. oncology, cardiology, orthopedics/dentistry, pure stroke or neurodegeneration with no mood/reward/cognition relevance, metabolic or immune disease with no CNS angle, veterinary/agricultural/plant studies, or non-biomedical uses of a term (e.g. 'lithium' batteries, 'kindling' firewood).
+
+When genuinely unsure, INCLUDE. Reply with ONLY one word: RELEVANT or IRRELEVANT."""
     try:
         msg = _ai.messages.create(
             model="claude-haiku-4-5-20251001",
@@ -150,18 +151,16 @@ def run():
             if not nct_id or nct_id in seen or nct_id in new_seen:
                 continue
 
-            # Country safety filter (catches trials missing country data in API filter)
             locs = s.get("contactsLocationsModule", {}).get("locations", [])
             countries = set(l.get("country", "") for l in locs)
             if countries and not countries.intersection(ALLOWED_COUNTRIES):
                 continue
 
-            # AI relevance screen
             title = s.get("identificationModule", {}).get("briefTitle", "")
             summary = s.get("descriptionModule", {}).get("briefSummary", "")
             if not is_relevant(title, summary, condition):
                 log_reject(nct_id, title, condition)
-                new_seen.add(nct_id)  # mark seen so we don't re-screen daily
+                new_seen.add(nct_id)
                 continue
 
             post_to_discord(trial, condition)
