@@ -53,25 +53,22 @@ def get_crossref_by_doi(doi):
         msg = r.json().get("message", {})
         title = (msg.get("title") or [""])[0]
         abstract = msg.get("abstract", "")
-        abstract = re.sub(r"<[^>]+>", "", abstract)  # strip XML tags
+        abstract = re.sub(r"<[^>]+>", "", abstract)
         return f"Title: {title}\nAbstract: {abstract}".strip()
     except Exception:
         return ""
 
 def extract_source_text(url):
-    # PubMed link?
     m = re.search(r'pubmed\.ncbi\.nlm\.nih\.gov/(\d+)', url)
     if m:
         text = get_pubmed_abstract(m.group(1))
         if text:
             return text, "pubmed"
-    # DOI link?
     m = re.search(r'(10\.\d{4,9}/[-._;()/:A-Z0-9]+)', url, re.I)
     if m:
         text = get_crossref_by_doi(m.group(1))
         if text:
             return text, "crossref"
-    # Fallback: try fetching the page
     try:
         page = requests.get(url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
         if page.status_code == 200 and len(page.text) > 500:
@@ -83,20 +80,26 @@ def extract_source_text(url):
 def summarize(url, context_text):
     source_text, method = extract_source_text(url)
     if not source_text:
-        return None  # Couldn't get content — signal to skip
+        return None
     prompt = f"""A member of a research community focused on severe anhedonia and reward dysfunction shared this link.
 
 Posted text: {context_text}
 URL: {url}
 Source content: {source_text}
 
-Write a 2-4 sentence plain-language summary of what this source says. Describe the findings factually. Do NOT give medical advice, dosing, or tell anyone what to try — just explain what the source reports."""
+First, judge whether the "Source content" above is the actual article/study text. If it is instead a CAPTCHA page, a login or paywall wall, a cookie/consent notice, an error page, a "verify you are human" page, a "just a moment" page, or otherwise does NOT contain the real article content, reply with EXACTLY this single token and nothing else:
+SKIP
+
+Otherwise, write a 2-4 sentence plain-language summary of what this source says. Describe the findings factually. Do NOT give medical advice, dosing, or tell anyone what to try — just explain what the source reports."""
     msg = ai.messages.create(
         model="claude-opus-4-5",
         max_tokens=400,
         messages=[{"role": "user", "content": prompt}]
     )
-    return msg.content[0].text
+    text = msg.content[0].text.strip()
+    if text.upper().startswith("SKIP") or len(text) < 15:
+        return None
+    return text
 
 @client.event
 async def on_ready():
