@@ -147,7 +147,6 @@ CONDITIONS = [
     "VGKC antibodies",
     "GAD65 antibodies",
     "intravenous immunoglobulin",
-    "IVIG",
     "plasmapheresis autoimmune brain",
     "therapeutic plasma exchange neuropsychiatric",
     "CCR5 neuroinflammation",
@@ -314,7 +313,6 @@ CONDITIONS = [
     "GABA and anhedonia",
     "KCC2",
     "depolarizing GABA",
-    "anandamide",
     "FAAH inhibitor",
     "endogenous cannabinoids",
 
@@ -371,7 +369,6 @@ CONDITIONS = [
     "TAK-041",
     "GLYX-13",
     "rapastinel",
-    "suramin",
     "9-methyl-beta-carboline",
     "9-me-bc",
     "zalsupindole",
