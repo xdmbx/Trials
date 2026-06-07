@@ -77,17 +77,14 @@ def extract_source_text(url):
         pass
     return "", "none"
 
-def summarize(url, context_text):
-    source_text, method = extract_source_text(url)
-    if not source_text:
-        return None
-    prompt = f"""A member of a research community focused on severe anhedonia and reward dysfunction shared this link.
+def write_summary(source_text, context_text="", url=""):
+    prompt = f"""A member of a research community focused on severe anhedonia and reward dysfunction shared this source.
 
 Posted text: {context_text}
 URL: {url}
 Source content: {source_text}
 
-First, judge whether the "Source content" above is the actual article/study text. If it is instead a CAPTCHA page, a login or paywall wall, a cookie/consent notice, an error page, a "verify you are human" page, a "just a moment" page, or otherwise does NOT contain the real article content, reply with EXACTLY this single token and nothing else:
+First, judge whether the "Source content" above is the actual article/study text. If it is instead a CAPTCHA page, a login or paywall wall, a cookie/consent notice, an error page, or otherwise does NOT contain the real article content, reply with EXACTLY this single token and nothing else:
 SKIP
 
 Otherwise, write a 2-4 sentence plain-language summary of what this source says. Describe the findings factually. Do NOT give medical advice, dosing, or tell anyone what to try — just explain what the source reports."""
@@ -101,9 +98,38 @@ Otherwise, write a 2-4 sentence plain-language summary of what this source says.
         return None
     return text
 
+def make_summary_embed(text):
+    embed = discord.Embed(title="📝 Plain-Language Summary", description=text, color=0x1ABC9C)
+    embed.set_footer(text="AI summary • factual only, not medical advice")
+    return embed
+
 @client.event
 async def on_ready():
     print(f"Bot ready: {client.user}")
+
+@client.event
+async def on_message(message):
+    if message.author.bot:
+        return
+    if message.content.startswith("!autosummary"):
+        body = message.content[len("!autosummary"):].strip()
+        if len(body) < 30:
+            await message.channel.send("Paste the article text after the command: `!autosummary <abstract or article text>`", delete_after=10)
+            return
+        notice = await message.channel.send("Writing summary…")
+        try:
+            summary = write_summary(body)
+            if summary is None:
+                await notice.edit(content="Couldn't produce a summary from that text — it may not contain the actual article content.")
+                return
+            await notice.delete()
+            await message.channel.send(embed=make_summary_embed(summary))
+            try:
+                await message.delete()
+            except Exception:
+                pass
+        except Exception as e:
+            await notice.edit(content=f"Error writing summary: {e}")
 
 @client.event
 async def on_thread_create(thread):
@@ -122,13 +148,15 @@ async def on_thread_create(thread):
     urls = re.findall(r'https?://\S+', text)
     if not urls:
         return
-    summary = summarize(urls[0], text)
+    source_text, method = extract_source_text(urls[0])
+    if not source_text:
+        print(f"Skipped (couldn't fetch): {thread.name}")
+        return
+    summary = write_summary(source_text, text, urls[0])
     if summary is None:
         print(f"Skipped (no accessible content): {thread.name}")
         return
-    embed = discord.Embed(title="📝 Plain-Language Summary", description=summary, color=0x1ABC9C)
-    embed.set_footer(text="AI summary • factual only, not medical advice")
-    await thread.send(embed=embed)
+    await thread.send(embed=make_summary_embed(summary))
 
 @client.event
 async def on_raw_reaction_add(payload):
