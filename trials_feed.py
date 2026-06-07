@@ -23,21 +23,21 @@ ALLOWED_COUNTRIES = {
 
 _ai = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-COMMUNITY_PROFILE = """A research community for people with severe, often treatment-resistant anhedonia and related states: 'blank mind' (loss of inner speech/imagery/spontaneous thought), profound emotional blunting, loss of motivation/drive, and 'substance blockage' (psychoactive drugs producing little or no effect). Onset is often linked to a discrete trigger — antipsychotics, SSRIs/SNRIs, finasteride (PFS), bupropion, benzodiazepine withdrawal/kindling, MDMA/psychedelics, long COVID/post-viral states, chronic stress, or metabolic/autoimmune causes — though some cases are gradual or lifelong. Members closely track mechanisms (dopaminergic, glutamatergic AMPA/NMDA, opioid, GABAergic/neurosteroid, neuroinflammatory, neuroplasticity, mitochondrial/metabolic, gut-brain, HPA/autonomic) and experimental interventions (MAOIs, dopamine agonists, ketamine, novel/rapid antidepressants, neuromodulation, neurotrophic peptides, immunomodulation, and research-chemical approaches)."""
+COMMUNITY_PROFILE = """This feed serves a specific community: people living with severe, usually treatment-resistant anhedonia and closely related states -- profound emotional blunting/numbing, 'blank mind' (loss of inner speech, mental imagery, and spontaneous thought), collapse of motivation/drive, and 'substance blockage' (psychoactive drugs producing little or no subjective effect). For most members the onset was a discrete injury or trigger: antipsychotics (quetiapine, olanzapine, risperidone, aripiprazole), SSRIs/SNRIs (PSSD-type states), finasteride (PFS), bupropion, benzodiazepine withdrawal or kindling, MDMA or classic psychedelics, long COVID / post-viral states, carbon-monoxide or other toxic exposures, melanocortin peptides, or chronic-stress crashes -- though some cases are gradual or lifelong. Members track the mechanisms thought to drive these states (dopaminergic reward signalling, glutamatergic AMPA/NMDA, opioid, GABAergic/neurosteroid, neuroinflammatory, neuroplasticity/BDNF-TrkB, mitochondrial/metabolic, gut-brain, HPA/autonomic) and the interventions they actually try or follow (MAOIs such as tranylcypromine and phenelzine, dopamine agonists like pramipexole, low-dose amisulpride, ketamine/esketamine/arketamine, AXS-05, ECT, deep brain stimulation, TMS/SAINT, tVNS, stellate ganglion block, plasmapheresis/IVIG, neurotrophic peptides such as semax, cerebrolysin, NSI-189 and MIF-1, low-dose naltrexone, methylene blue, and non-hallucinogenic psychoplastogens)."""
 
 def is_relevant(title, summary, condition):
     prompt = f"""{COMMUNITY_PROFILE}
 
-A paper/trial matched the keyword "{condition}". Decide whether to post it.
+A clinical trial matched the keyword "{condition}". Decide whether it genuinely belongs in this community's feed.
 
 Title: {title}
 Summary: {summary}
 
-INCLUDE if it has any plausible connection to anhedonia, reward/motivation/pleasure processing, emotion regulation, depression (especially treatment-resistant), drug-induced or persistent neuropsychiatric states, or any brain mechanism or intervention this community studies — even loosely or preclinically. Animal models, mechanism papers, novel compounds, and research chemicals all count.
+POST (RELEVANT) only if you can state in one sentence how it bears on the community above -- i.e. it relates to: anhedonia or reward/motivation/pleasure processing; emotional blunting or blank mind; global non-response to psychoactive drugs; one of the drug-induced or persistent neuropsychiatric injury states listed (PSSD, PFS, antipsychotic-induced, benzo withdrawal/kindling, post-psychedelic/MDMA, post-viral/long-COVID, toxic exposure); treatment-resistant depression; one of the listed mechanisms acting on mood/reward/motivation/emotion/cognition; or one of the listed interventions. Preclinical work, animal models, mechanism papers, novel compounds and research chemicals all count if that connection is real.
 
-REJECT only if the keyword appears incidentally with no brain/mind/mood/reward angle — e.g. oncology, cardiology, orthopedics/dentistry, pure stroke or neurodegeneration with no mood/reward/cognition relevance, metabolic or immune disease with no CNS angle, veterinary/agricultural/plant studies, or non-biomedical uses of a term (e.g. 'lithium' batteries, 'kindling' firewood).
+REJECT (IRRELEVANT) if the keyword appears incidentally and you cannot state a real connection -- including oncology, cardiology, orthopedics/dentistry, general neurology/neurodegeneration or stroke with no mood/reward/cognition angle, metabolic or immune disease with no CNS-mood angle, veterinary/agricultural/plant work, devices/engineering, pure epidemiology with no mechanism or intervention tie, and studies about a different psychiatric condition (schizophrenia/psychosis, ADHD, autism, OCD, PTSD, eating disorders) UNLESS they bear on anhedonia, reward, emotional blunting, or one of the listed mechanisms or interventions.
 
-When genuinely unsure, INCLUDE. Reply with ONLY one word: RELEVANT or IRRELEVANT."""
+If you cannot articulate the connection in one sentence, answer IRRELEVANT. Reply with ONLY one word: RELEVANT or IRRELEVANT."""
     try:
         msg = _ai.messages.create(
             model="claude-haiku-4-5-20251001",
