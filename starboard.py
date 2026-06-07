@@ -99,7 +99,7 @@ Otherwise, write a 2-4 sentence plain-language summary of what this source says.
     return text
 
 def make_summary_embed(text):
-    embed = discord.Embed(title="📝 Plain-Language Summary", description=text, color=0x1ABC9C)
+    embed = discord.Embed(title="📝 Plain-Language Summary", description=text[:4096], color=0x1ABC9C)
     embed.set_footer(text="AI summary • factual only, not medical advice")
     return embed
 
@@ -111,25 +111,19 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
-    if message.content.startswith("!autosummary"):
-        body = message.content[len("!autosummary"):].strip()
-        if len(body) < 30:
-            await message.channel.send("Paste the article text after the command: `!autosummary <abstract or article text>`", delete_after=10)
+    # Manual command: !summary <finished summary text>
+    if message.content.startswith("!summary"):
+        body = message.content[len("!summary"):].strip()
+        if not body:
+            await message.channel.send("Usage: `!summary <your finished summary text>`", delete_after=8)
             return
-        notice = await message.channel.send("Writing summary…")
+        await message.channel.send(embed=make_summary_embed(body))
         try:
-            summary = write_summary(body)
-            if summary is None:
-                await notice.edit(content="Couldn't produce a summary from that text — it may not contain the actual article content.")
-                return
-            await notice.delete()
-            await message.channel.send(embed=make_summary_embed(summary))
-            try:
-                await message.delete()
-            except Exception:
-                pass
-        except Exception as e:
-            await notice.edit(content=f"Error writing summary: {e}")
+            await message.delete()
+        except discord.Forbidden:
+            pass
+        except Exception:
+            pass
 
 @client.event
 async def on_thread_create(thread):
