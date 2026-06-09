@@ -14,6 +14,12 @@ from conditions_list import CONDITIONS
 DAYS_BACK = 1
 SEEN_FILE = "seen_trials.json"
 REJECTS_FILE = "filtered_out.json"
+SCREEN_MODEL = "claude-opus-4-5"   # stronger than haiku for judgment; change here if needed
+
+# Every search must ALSO hit one of these, so broad mechanism keywords
+# stop pulling in the whole field.
+ANCHOR = ('anhedonia OR reward OR "emotional blunting" OR motivation OR '
+          'depression OR antidepressant OR mood OR psychiatric OR anxiety OR dysphoria')
 
 ALLOWED_COUNTRIES = {
     "United States", "United Kingdom", "Germany", "France", "Italy",
@@ -23,31 +29,34 @@ ALLOWED_COUNTRIES = {
 
 _ai = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
-COMMUNITY_PROFILE = """This feed serves a specific community: people living with severe, usually treatment-resistant anhedonia and closely related states -- profound emotional blunting/numbing, 'blank mind' (loss of inner speech, mental imagery, and spontaneous thought), collapse of motivation/drive, and 'substance blockage' (psychoactive drugs producing little or no subjective effect). For most members the onset was a discrete injury or trigger: antipsychotics (quetiapine, olanzapine, risperidone, aripiprazole), SSRIs/SNRIs (PSSD-type states), finasteride (PFS), bupropion, benzodiazepine withdrawal or kindling, MDMA or classic psychedelics, long COVID / post-viral states, carbon-monoxide or other toxic exposures, melanocortin peptides, or chronic-stress crashes -- though some cases are gradual or lifelong. Members track the mechanisms thought to drive these states (dopaminergic reward signalling, glutamatergic AMPA/NMDA, opioid, GABAergic/neurosteroid, neuroinflammatory, neuroplasticity/BDNF-TrkB, mitochondrial/metabolic, gut-brain, HPA/autonomic) and the interventions they actually try or follow (MAOIs such as tranylcypromine and phenelzine, dopamine agonists like pramipexole, low-dose amisulpride, ketamine/esketamine/arketamine, AXS-05, ECT, deep brain stimulation, TMS/SAINT, tVNS, stellate ganglion block, plasmapheresis/IVIG, neurotrophic peptides such as semax, cerebrolysin, NSI-189 and MIF-1, low-dose naltrexone, methylene blue, and non-hallucinogenic psychoplastogens)."""
+COMMUNITY_PROFILE = """This feed serves a community of people with severe, usually treatment-resistant anhedonia and closely related states: profound emotional blunting/numbing, 'blank mind', collapse of motivation, and 'substance blockage' (drugs producing little or no effect). For most members onset was a discrete injury: antipsychotics, SSRIs/SNRIs (PSSD), finasteride (PFS), bupropion, benzodiazepine withdrawal/kindling, MDMA/psychedelics, long COVID/post-viral, toxic exposure, or chronic-stress crashes. Members track the mechanisms behind these states (dopaminergic reward, glutamatergic AMPA/NMDA, opioid, GABA/neurosteroid, neuroinflammatory, neuroplasticity, mitochondrial/metabolic, gut-brain, HPA/autonomic) and the interventions they follow (MAOIs, dopamine agonists, ketamine/esketamine, AXS-05, ECT, DBS, TMS/SAINT, tVNS, plasmapheresis/IVIG, neurotrophic peptides, low-dose naltrexone, psychoplastogens)."""
 
 def is_relevant(title, summary, condition):
     prompt = f"""{COMMUNITY_PROFILE}
 
-A clinical trial matched the keyword "{condition}". Decide whether it genuinely belongs in this community's feed.
+A clinical trial matched the keyword "{condition}". Decide whether it genuinely belongs in this feed.
 
 Title: {title}
 Summary: {summary}
 
-POST (RELEVANT) only if you can state in one sentence how it bears on the community above -- i.e. it relates to: anhedonia or reward/motivation/pleasure processing; emotional blunting or blank mind; global non-response to psychoactive drugs; one of the drug-induced or persistent neuropsychiatric injury states listed (PSSD, PFS, antipsychotic-induced, benzo withdrawal/kindling, post-psychedelic/MDMA, post-viral/long-COVID, toxic exposure); treatment-resistant depression; one of the listed mechanisms acting on mood/reward/motivation/emotion/cognition; or one of the listed interventions. Preclinical work, animal models, mechanism papers, novel compounds and research chemicals all count if that connection is real.
+POST (RELEVANT) only if you can state in one sentence how it bears on the community above: anhedonia, reward/motivation/pleasure, emotional blunting, treatment-resistant depression, one of the drug-induced or post-viral injury states, or one of the listed mechanisms/interventions acting on mood/reward/emotion/cognition. Preclinical and mechanism studies count if that link is real.
 
-REJECT (IRRELEVANT) if the keyword appears incidentally and you cannot state a real connection -- including oncology, cardiology, orthopedics/dentistry, general neurology/neurodegeneration or stroke with no mood/reward/cognition angle, metabolic or immune disease with no CNS-mood angle, veterinary/agricultural/plant work, devices/engineering, pure epidemiology with no mechanism or intervention tie, and studies about a different psychiatric condition (schizophrenia/psychosis, ADHD, autism, OCD, PTSD, eating disorders) UNLESS they bear on anhedonia, reward, emotional blunting, or one of the listed mechanisms or interventions.
+REJECT (IRRELEVANT) if the keyword is incidental with no mood/reward/brain angle: oncology, cardiology, orthopedics/dentistry, general neurology/stroke/neurodegeneration with no mood angle, metabolic/immune disease with no CNS-mood angle, devices, or a different psychiatric condition with no anhedonia/reward/blunting tie.
 
 If you cannot articulate the connection in one sentence, answer IRRELEVANT. Reply with ONLY one word: RELEVANT or IRRELEVANT."""
-    try:
-        msg = _ai.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=10,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        return "IRRELEVANT" not in msg.content[0].text.strip().upper()
-    except Exception as e:
-        print(f"Screen error (defaulting to post): {e}")
-        return True
+    for attempt in range(2):
+        try:
+            msg = _ai.messages.create(
+                model=SCREEN_MODEL,
+                max_tokens=10,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return msg.content[0].text.strip().upper().startswith("RELEVANT")
+        except Exception as e:
+            print(f"Screen error (attempt {attempt+1}): {e}")
+            time.sleep(3)
+    print(f"Screen failed twice; SKIPPING '{title[:50]}' (fail-closed).")
+    return False
 
 def log_reject(nct_id, title, condition):
     rejects = []
@@ -75,16 +84,16 @@ def fetch_trials(condition):
     min_date = (datetime.now() - timedelta(days=DAYS_BACK)).strftime("%Y-%m-%d")
     url = "https://clinicaltrials.gov/api/v2/studies"
     params = {
-        "query.term": condition,
-        "filter.advanced": f"AREA[StudyFirstPostDate]RANGE[{min_date}, MAX] AND AREA[LocationCountry](United States OR United Kingdom OR Germany OR France OR Italy OR Spain OR Netherlands OR Belgium OR Sweden OR Denmark OR Norway OR Finland OR Switzerland OR Austria OR Poland)",
+        "query.term": f"({condition}) AND ({ANCHOR})",
+        "filter.advanced": f"AREA[StudyFirstPostDate]RANGE[{min_date}, MAX]",
         "fields": "NCTId,BriefTitle,Condition,Phase,StudyType,OverallStatus,StartDate,BriefSummary,LeadSponsorName,LocationCountry",
         "pageSize": 20,
-        "sort": "StudyFirstPostDate:desc"
+        "sort": "StudyFirstPostDate:desc",
     }
     try:
-        response = requests.get(url, params=params, timeout=15)
-        response.raise_for_status()
-        return response.json().get("studies", [])
+        r = requests.get(url, params=params, timeout=15)
+        r.raise_for_status()
+        return r.json().get("studies", [])
     except Exception as e:
         print(f"Error fetching '{condition}': {e}")
         return []
@@ -113,21 +122,21 @@ def post_to_discord(trial, matched_condition):
     country_str = ", ".join(countries[:5]) if countries else "Not specified"
 
     embed = {
-        "title": f"🔬 {title}",
+        "title": f"🧪 {title}",
         "url": f"https://clinicaltrials.gov/study/{nct_id}",
         "color": 0x0057b7,
         "description": summary,
         "fields": [
-            {"name": "🏷️ Matched Condition", "value": matched_condition.title(), "inline": True},
-            {"name": "📋 NCT ID", "value": nct_id, "inline": True},
-            {"name": "⚗️ Phase", "value": phase, "inline": True},
-            {"name": "📊 Status", "value": status, "inline": True},
-            {"name": "🔭 Study Type", "value": study_type, "inline": True},
-            {"name": "🏢 Sponsor", "value": sponsor, "inline": True},
+            {"name": "🎯 Matched", "value": matched_condition.title(), "inline": True},
+            {"name": "🆔 NCT", "value": nct_id, "inline": True},
+            {"name": "📊 Phase", "value": phase, "inline": True},
+            {"name": "📍 Status", "value": status, "inline": True},
+            {"name": "🔬 Type", "value": study_type, "inline": True},
+            {"name": "🏛️ Sponsor", "value": sponsor, "inline": True},
             {"name": "🌍 Countries", "value": country_str, "inline": False},
         ],
         "footer": {"text": "ClinicalTrials.gov • New Trial Alert"},
-        "timestamp": datetime.utcnow().isoformat() + "Z"
+        "timestamp": datetime.utcnow().isoformat() + "Z",
     }
     headers = {"Authorization": f"Bot {BOT_TOKEN}", "Content-Type": "application/json"}
     try:
@@ -141,33 +150,27 @@ def run():
     seen = load_seen()
     posted = 0
     new_seen = set()
-
     for condition in CONDITIONS:
         print(f"Checking: {condition}")
-        trials = fetch_trials(condition)
-        for trial in trials:
+        for trial in fetch_trials(condition):
             s = trial.get("protocolSection", {})
             nct_id = s.get("identificationModule", {}).get("nctId")
             if not nct_id or nct_id in seen or nct_id in new_seen:
                 continue
-
             locs = s.get("contactsLocationsModule", {}).get("locations", [])
             countries = set(l.get("country", "") for l in locs)
             if countries and not countries.intersection(ALLOWED_COUNTRIES):
                 continue
-
             title = s.get("identificationModule", {}).get("briefTitle", "")
             summary = s.get("descriptionModule", {}).get("briefSummary", "")
             if not is_relevant(title, summary, condition):
                 log_reject(nct_id, title, condition)
                 new_seen.add(nct_id)
                 continue
-
             post_to_discord(trial, condition)
             time.sleep(2)
             new_seen.add(nct_id)
             posted += 1
-
     save_seen(seen | new_seen)
     print(f"Done. Posted {posted} new trial(s).")
 
