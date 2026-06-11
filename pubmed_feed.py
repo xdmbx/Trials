@@ -18,7 +18,9 @@ REJECTS_FILE = "filtered_out_pubmed.json"
 SCREEN_MODEL = "claude-opus-4-5"
 
 ANCHOR = ('anhedonia OR reward OR "emotional blunting" OR motivation OR '
-          'depression OR antidepressant OR mood OR psychiatric OR anxiety OR dysphoria')
+          'depression OR antidepressant OR mood OR psychiatric OR anxiety OR '
+          'dysphoria OR dopamine OR serotonin OR glutamate OR GABA OR opioid OR '
+          'neuroplasticity OR neuroinflammation OR cognition OR brain OR neural')
 
 _ai = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -36,7 +38,7 @@ POST (RELEVANT) only if you can state in one sentence how it bears on the commun
 
 REJECT (IRRELEVANT) if the keyword is incidental with no mood/reward/brain angle: oncology, cardiology, orthopedics/dentistry, general neurology/stroke/neurodegeneration with no mood angle, metabolic/immune disease with no CNS-mood angle, veterinary/agricultural/plant work, or a different psychiatric condition with no anhedonia/reward/blunting tie.
 
-If you cannot articulate the connection in one sentence, answer IRRELEVANT. Reply with ONLY one word: RELEVANT or IRRELEVANT."""
+When there is a plausible connection, INCLUDE it. Only answer IRRELEVANT if the keyword is clearly incidental with no brain/mind/mood/reward angle at all. Reply with ONLY one word: RELEVANT or IRRELEVANT."""
     for attempt in range(2):
         try:
             msg = _ai.messages.create(
