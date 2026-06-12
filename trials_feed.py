@@ -11,7 +11,7 @@ CHANNEL_ID = "1510647038977773640"
 
 from conditions_list import CONDITIONS
 
-DAYS_BACK = 1
+DAYS_BACK = 3
 SEEN_FILE = "seen_trials.json"
 REJECTS_FILE = "filtered_out.json"
 SCREEN_MODEL = "claude-opus-4-5"   # stronger than haiku for judgment; change here if needed
@@ -86,7 +86,7 @@ def fetch_trials(condition):
     min_date = (datetime.now() - timedelta(days=DAYS_BACK)).strftime("%Y-%m-%d")
     url = "https://clinicaltrials.gov/api/v2/studies"
     params = {
-        "query.term": f"({condition}) AND ({ANCHOR})",
+        "query.term": condition,
         "filter.advanced": f"AREA[StudyFirstPostDate]RANGE[{min_date}, MAX]",
         "fields": "NCTId,BriefTitle,Condition,Phase,StudyType,OverallStatus,StartDate,BriefSummary,LeadSponsorName,LocationCountry",
         "pageSize": 20,

@@ -1,7 +1,7 @@
 import requests
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import xml.etree.ElementTree as ET
 import time
 import anthropic
@@ -78,12 +78,13 @@ def save_seen(seen):
 def fetch_pubmed_ids(condition):
     time.sleep(0.5)
     today = datetime.now().strftime("%Y/%m/%d")
+    mindate = (datetime.now() - timedelta(days=3)).strftime("%Y/%m/%d")
     url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     params = {
         "db": "pubmed",
-        "term": f"({condition}[Title/Abstract]) AND ({ANCHOR})",
+        "term": f"{condition}[Title/Abstract]",
         "datetype": "edat",
-        "mindate": today,
+        "mindate": mindate,
         "maxdate": today,
         "retmax": 10,
         "retmode": "json",
