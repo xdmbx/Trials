@@ -19,13 +19,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: seen_pubmed.json
-          key: seen-pubmed-v2-${{ github.run_id }}
-          restore-keys: seen-pubmed-v2-
+          key: seen-pubmed-${{ github.run_id }}
+          restore-keys: seen-pubmed-
       - name: Run feed
         run: python pubmed_feed.py
         env:
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          PUBMED_API_KEY: ${{ secrets.PUBMED_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           PUBMED_API_KEY: ${{ secrets.PUBMED_API_KEY }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
